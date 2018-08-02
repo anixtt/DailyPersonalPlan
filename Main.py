@@ -8,7 +8,8 @@ if sys.getdefaultencoding() != defaultencoding:
 
 
 import calendar
-import connectMysql
+# import connectMysql
+import connectSqlite3
 try:
     import Tkinter
     import tkFont
@@ -130,7 +131,7 @@ class Calendar(ttk.Frame):
 
     # 删除tag方法
     def _deletetag(self):
-        connectMysql.deletetagdatatoDB(self._tagid[self._deletetagflag])
+        connectSqlite3.deletetagdatatoDB(self._tagid[self._deletetagflag])
         # 变相刷新整个页面
         for widget in root.winfo_children():
             widget.destroy()
@@ -150,7 +151,7 @@ class Calendar(ttk.Frame):
                 self._deleteplanflag = i
     # 删除plan方法
     def _deleteplan(self):
-        connectMysql.deleteplandatatoDB(self._planid[self._deleteplanflag])
+        connectSqlite3.deleteplandatatoDB(self._planid[self._deleteplanflag])
         # 变相刷新整个页面
         for widget in root.winfo_children():
             widget.destroy()
@@ -273,7 +274,7 @@ class Calendar(ttk.Frame):
         canvas = self._canvas
         # 点击的日期
         date = self.datetime(self._date.year, self._date.month, int(self._selection[0])).strftime("%Y-%m-%d")
-        results = connectMysql.getplandatafromDBdate(date)
+        results = connectSqlite3.getplandatafromDBdate(date)
         # 如果数据库中数据少于四行则canvas行数加4乘以行高 其他的话行数为数据库中数据量加2
         self._planrowspan = 4 if len(results) <= 4 else len(results) + 2
         canvas.configure(width=width + 4, height=(10 + self._planrowspan) * height)
@@ -326,7 +327,7 @@ class Calendar(ttk.Frame):
         inputendminute = Tkinter.StringVar()
         tagchosen = ttk.Combobox(addplanframe, textvariable=inputtag)
         taglist = []
-        results = connectMysql.gettagdatatfromDB()
+        results = connectSqlite3.gettagdatatfromDB()
         for result in results:
             taglist.append(result[1])
         tagchosen['values'] = taglist
@@ -374,7 +375,7 @@ class Calendar(ttk.Frame):
         # 下拉列表获取焦点
         tagchosen.focus_set()
         date1 = self.datetime(self._date.year, self._date.month, int(self._selection[0])).strftime("%Y-%m-%d")
-        results1 = connectMysql.getplandatafromDBdate(date1)
+        results1 = connectSqlite3.getplandatafromDBdate(date1)
         datestarttime = self.datetime(self._date.year, self._date.month, int(self._selection[0]),
             starthour, startminute)
         dateendtime = self.datetime(self._date.year, self._date.month, int(self._selection[0]),
@@ -382,7 +383,7 @@ class Calendar(ttk.Frame):
         date = datestarttime.strftime("%Y-%m-%d")
         starttime = datestarttime.strftime("%H:%M")
         endtime = dateendtime.strftime("%H:%M")
-        for result in connectMysql.gettagdatatfromDB():
+        for result in connectSqlite3.gettagdatatfromDB():
             # 如果plan内容等于数据库内容
             if plantext == result[1]:
                 # 插入数据标志位为1
@@ -390,17 +391,18 @@ class Calendar(ttk.Frame):
         # 如果plan内容不为空
         if len(plantext.split()) != 0:
             # 数据库内tag数目不为0 并且 plan内容不等于数据库内容
-            if len(connectMysql.gettagdatatfromDB()) != 0 and taginsertflag != 1:
+            if len(connectSqlite3.gettagdatatfromDB()) != 0 and taginsertflag != 1:
                 # 最大的id加1 即插入到最后一位
-                connectMysql.inserttagintoDB(connectMysql.gettagdatatfromDB()[-1][0] + 1, plantext)
+                connectSqlite3.inserttagintoDB(connectSqlite3.gettagdatatfromDB()[-1][0] + 1, plantext)
             # 如果数据库内tag为零 则插入数据id为1
-            if len(connectMysql.gettagdatatfromDB()) == 0 and taginsertflag != 1:
-                connectMysql.inserttagintoDB(1, plantext)
-            if len(connectMysql.getallplandatafromDB()) == 0:
+            if len(connectSqlite3.gettagdatatfromDB()) == 0 and taginsertflag != 1:
+                connectSqlite3.inserttagintoDB(1, plantext)
+            if len(connectSqlite3.getallplandatafromDB()) == 0:
                 self._id = 1
             else:
-                self._id = connectMysql.getallplandatafromDB()[-1][0] + 1
-        connectMysql.insertplanintoDB(self._id, plantext, date, starttime, endtime)
+                self._id = connectSqlite3.getallplandatafromDB()[-1][0] + 1
+        connectSqlite3.insertplanintoDB(self._id, plantext, str(date), str(starttime), str(endtime))
+        # connectMysql.insertplanintoDB(self._id, plantext, date, starttime, endtime)
         self._id += 1
         self._show_plan(showplanframe, date, width, height)
         #"%Y-%m-%d %H:%M:%S"
@@ -411,11 +413,11 @@ class Calendar(ttk.Frame):
         for i in range(len(self._states)):
             # 如果state是True 就已完成 变成删除线格式
             if self._states[i].get() == True:
-                connectMysql.updateplandatatoDB(self._planid[i], 'finished')
+                connectSqlite3.updateplandatatoDB(self._planid[i], 'finished')
                 self._checkplans[i].configure(style='Overstrike.Toolbutton')
             else:
                 #如果state是False 就未完成 变成加粗格式
-                connectMysql.updateplandatatoDB(self._planid[i], 'unfinished')
+                connectSqlite3.updateplandatatoDB(self._planid[i], 'unfinished')
                 self._checkplans[i].configure(style='Bold.Toolbutton')
 
     # def _check_plan(self, state, checkplan, checkplanlist):
@@ -489,7 +491,7 @@ class Calendar(ttk.Frame):
         self._planid = []       # planid的列表
         stateflag = 0           #状态标志位
         rowflag = self._planrowspan #canvas行数
-        results = connectMysql.getallplandatafromDB()
+        results = connectSqlite3.getallplandatafromDB()
         for result in results:
             # 如果数据中日期等于所选日期
             if str(result[2]) == date:
@@ -600,7 +602,7 @@ class Calendar(ttk.Frame):
     # 将tag从数据库中展现在界面上
     def _datafromDB(self, heightflag, tagheight):
         heightflag = heightflag     #行高
-        results = connectMysql.gettagdatatfromDB()  #tag所有数据
+        results = connectSqlite3.gettagdatatfromDB()  #tag所有数据
         font = tkFont.Font()
         firstrowtagflag = 0     #第一行的tag数量标志
         fontwidth = 0           #tag字数长度
@@ -723,7 +725,7 @@ class Calendar(ttk.Frame):
             self._deletetag()
         else:
             # 修改数据 刷新整个页面
-            connectMysql.updatetagdatatoDB(self._tagid[self._deletetagflag], event.widget.get())
+            connectSqlite3.updatetagdatatoDB(self._tagid[self._deletetagflag], event.widget.get())
             for widget in root.winfo_children():
                 widget.destroy()
             mainshow()
@@ -750,7 +752,10 @@ class Calendar(ttk.Frame):
         tag.place_forget()
         # 将label中的数据写入数据库
         if len(labeltext.split()) != 0:
-            connectMysql.inserttagintoDB(self._tagid[id - 1] + 1, labeltext)
+            if id == 0:
+                connectSqlite3.inserttagintoDB(1, labeltext)
+            else:
+                connectSqlite3.inserttagintoDB(self._tagid[id - 1] + 1, labeltext)
         self._deletebutton(self._buttons[-1])
         button = self._newbutton()
         self._buttons.append(button)
